@@ -1,25 +1,31 @@
-# This is a template for a Ruby scraper on morph.io (https://morph.io)
-# including some code snippets below that you should find helpful
+require 'scraperwiki'
+require 'mechanize'
 
-# require 'scraperwiki'
-# require 'mechanize'
-#
-# agent = Mechanize.new
-#
-# # Read in a page
-# page = agent.get("http://foo.com")
-#
-# # Find something on the page using css selectors
-# p page.at('div.content')
-#
-# # Write out to the sqlite database using scraperwiki library
-# ScraperWiki.save_sqlite(["name"], {"name" => "susan", "occupation" => "software developer"})
-#
-# # An arbitrary query against the database
-# ScraperWiki.select("* from data where 'name'='peter'")
+a = Mechanize.new
 
-# You don't have to do things with the Mechanize or ScraperWiki libraries.
-# You can use whatever gems you want: https://morph.io/documentation/ruby
-# All that matters is that your final data is written to an SQLite database
-# called "data.sqlite" in the current working directory which has at least a table
-# called "data".
+url = "https://www.ccc.tas.gov.au/planning-development/planning/advertised-planning-permit-applications/"
+a.get(url) do |page|
+  page.search('.doc-list a').each do |a|
+    unless a.at('img')
+      # Long winded name of PDF
+      name = a.inner_text.strip
+      s = name.split(' - ').map(&:strip)
+      # Skip over links that we don't know how to handle
+      if s.count != 4
+        puts "Unexpected form of PDF name. So, skipping: #{name}"
+        next
+      end
+
+      record = {
+        'council_reference' => s[0],
+        'address' => s[1] + ", TAS",
+        'description' => s[2],
+        'on_notice_to' => Date.parse(s[3]).to_s,
+        'date_scraped' => Date.today.to_s,
+        'info_url' => (page.uri + a["href"]).to_s
+      }
+
+      ScraperWiki.save_sqlite(['council_reference'], record)
+    end
+  end
+end
