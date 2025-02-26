@@ -62,47 +62,54 @@ date_scraped = Date.today.to_s
 
 logger.info("Start Extraction of Data")
 
-# Loop through document list entries
-page.search('.doc-list a').each do |a|
-  unless a.at('img')  # Skip if it's an image link
-    name = a.inner_text.strip
-    s = name.split(' - ').map(&:strip)
+# Loop through each planning application
+page.css('.content-card').each do |card|
+  # Extract Council Reference (Application Number)
+  council_reference = card.at_css('p:contains("Application Number:")')&.text&.strip&.sub("Application Number:", "")&.strip
 
-    # Ensure it follows the expected format
-    if s.count != 4
-      logger.warn("Unexpected form of PDF name. Skipping: #{name}")
-      next
-    end
+  # Extract the full text from <h3 class="content-card__title"> to parse the Address and Description
+  full_text = card.at_css('.map-link__text')&.text&.strip
 
-    council_reference = s[0]
-    address = "#{s[1]}, TAS"
-    description = s[2]
+  if full_text
+    # Extract Address: The part before the first "–"
+    address = full_text.split("–").first.strip
 
-    # Extract on_notice_to as a valid date
-    begin
-      on_notice_to = Date.parse(s[3]).to_s
-    rescue ArgumentError
-      on_notice_to = "Invalid Date"
-    end
+    # Extract Description: The part after the first "–" but before "Advertising period expires"
+    description = full_text.split("–")[1..]&.join("–")&.split("Advertising period expires")&.first&.strip
+  else
+    address = "Unknown"
+    description = "Unknown"
+  end
 
-    application_url = (page.uri + a["href"]).to_s
+  # Extract Closing Date (on_notice_to)
+  on_notice_to_raw = card.at_css('p:contains("Closes:")')&.text&.strip&.sub("Closes:", "")&.strip
 
-    # Log the extracted data
-    logger.info("Council Reference: #{council_reference}")
-    logger.info("Description: #{description}")
-    logger.info("Address: #{address}")
-    logger.info("Closing Date: #{on_notice_to}")
-    logger.info("View Details Link: #{application_url}")
-    logger.info("-----------------------------------")
+  # Convert to YYYY-MM-DD format
+  begin
+    on_notice_to = Date.parse(on_notice_to_raw).to_s
+  rescue ArgumentError
+    on_notice_to = "Invalid Date"
+  end
+
+  # Extract PDF Link
+  document_description = card.at_css('.content-card__button a')&.[]('href')
+
+  # Log the extracted data
+  logger.info("Council Reference: #{council_reference}")
+  logger.info("Description: #{description}")
+  logger.info("Address: #{address}")
+  logger.info("Closing Date: #{on_notice_to}")
+  logger.info("PDF Link: #{document_description}")
+  logger.info("-----------------------------------")
 
     # Ensure the entry does not already exist before inserting
     existing_entry = db.execute("SELECT * FROM clarence WHERE council_reference = ?", council_reference)
 
     if existing_entry.empty?
       db.execute("INSERT INTO clarence 
-        (council_reference, description, address, date_received, on_notice_to, date_scraped, application_url) 
+        (council_reference, description, address, date_received, on_notice_to, date_scraped, document_description) 
         VALUES (?, ?, ?, ?, ?, ?, ?)",
-        [council_reference, description, address, nil, on_notice_to, date_scraped, application_url])
+        [council_reference, description, address, nil, on_notice_to, date_scraped, document_description])
 
       logger.info("Data for #{council_reference} saved to database.")
     else
