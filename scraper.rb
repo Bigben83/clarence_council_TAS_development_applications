@@ -75,15 +75,6 @@ a.get(url) do |page|
         next
       end
 
-      record = {
-        'council_reference' => s[0],
-        'address' => s[1] + ", TAS",
-        'description' => s[2],
-        'on_notice_to' => Date.parse(s[3]).to_s,
-        'date_scraped' => Date.today.to_s,
-        'info_url' => (page.uri + a["href"]).to_s
-      }
-
       council_reference = s[0]
       address = s[1] + ", TAS"
       description = s[2]
