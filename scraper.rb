@@ -71,13 +71,15 @@ page.css('.content-card').each do |card|
   full_text = card.at_css('.map-link__text')&.text&.strip
 
   if full_text
-    # Split the text at " – " to separate Address and Description
-    parts = full_text.split(" – ")
+    # Remove the council reference if it's at the beginning
+    full_text = full_text.sub(/^#{Regexp.escape(council_reference)}\s*–\s*/, '')
 
-    # Ensure it has both address and description
-    if parts.length >= 2
-      address = parts[0].strip  # The first part is the address
-      description = parts[1..].join(" – ").split("Advertising period expires").first.strip  # Everything after " – ", excluding expiry notice
+    # Split at " – " (first occurrence separates address from description)
+    parts = full_text.split(" – ", 2) 
+
+    if parts.length == 2
+      address = parts[0].strip  # Everything before the first " – "
+      description = parts[1].split("Advertising period expires").first.strip  # Remove expiry notice
     else
       address = "Unknown"
       description = "Unknown"
