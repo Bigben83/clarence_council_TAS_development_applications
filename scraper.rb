@@ -71,11 +71,17 @@ page.css('.content-card').each do |card|
   full_text = card.at_css('.map-link__text')&.text&.strip
 
   if full_text
-    # Extract Address: The part before the first "–"
-    address = full_text.split("–").first.strip
+    # Split the text at " – " to separate Address and Description
+    parts = full_text.split(" – ")
 
-    # Extract Description: The part after the first "–" but before "Advertising period expires"
-    description = full_text.split("–")[1..]&.join("–")&.split("Advertising period expires")&.first&.strip
+    # Ensure it has both address and description
+    if parts.length >= 2
+      address = parts[0].strip  # The first part is the address
+      description = parts[1..].join(" – ").split("Advertising period expires").first.strip  # Everything after " – ", excluding expiry notice
+    else
+      address = "Unknown"
+      description = "Unknown"
+    end
   else
     address = "Unknown"
     description = "Unknown"
@@ -96,8 +102,8 @@ page.css('.content-card').each do |card|
 
   # Log the extracted data
   logger.info("Council Reference: #{council_reference}")
-  logger.info("Description: #{description}")
-  logger.info("Address: #{address}")
+  logger.info("Address: #{address}")  # Now correctly extracted
+  logger.info("Description: #{description}")  # Now correctly extracted
   logger.info("Closing Date: #{on_notice_to}")
   logger.info("PDF Link: #{document_description}")
   logger.info("-----------------------------------")
