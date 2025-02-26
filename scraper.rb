@@ -102,20 +102,20 @@ page.css('.content-card').each do |card|
   logger.info("PDF Link: #{document_description}")
   logger.info("-----------------------------------")
 
-    # Ensure the entry does not already exist before inserting
-    existing_entry = db.execute("SELECT * FROM clarence WHERE council_reference = ?", council_reference)
+  # Ensure the entry does not already exist before inserting
+  existing_entry = db.execute("SELECT * FROM clarence WHERE council_reference = ?", council_reference)
 
-    if existing_entry.empty?
-      db.execute("INSERT INTO clarence 
-        (council_reference, description, address, date_received, on_notice_to, date_scraped, document_description) 
-        VALUES (?, ?, ?, ?, ?, ?, ?)",
-        [council_reference, description, address, nil, on_notice_to, date_scraped, document_description])
+  if existing_entry.empty?
+    db.execute("INSERT INTO clarence 
+      (council_reference, description, address, date_received, on_notice_to, date_scraped, document_description) 
+      VALUES (?, ?, ?, ?, ?, ?, ?)",
+      [council_reference, description, address, nil, on_notice_to, date_scraped, document_description])
 
-      logger.info("Data for #{council_reference} saved to database.")
-    else
-      logger.info("Duplicate entry for document #{council_reference} found. Skipping insertion.")
-    end
+    logger.info("Data for #{council_reference} saved to database.")
+  else
+    logger.info("Duplicate entry for document #{council_reference} found. Skipping insertion.")
   end
 end
+
 
 logger.info("Data has been successfully inserted into the database.")
