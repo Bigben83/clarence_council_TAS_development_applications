@@ -11,10 +11,10 @@ logger = Logger.new(STDOUT)
 # Define the URL of the page
 url = "https://www.ccc.tas.gov.au/development/advertised-plans/"
 
-# Step 1: Fetch the page content for the main listing
+# Step 1: Fetch the page content
 begin
   logger.info("Fetching page content from: #{url}")
-  page = a.get(url)
+  page_html = open(url).read
   logger.info("Successfully fetched page content.")
 rescue => e
   logger.error("Failed to fetch page content: #{e}")
